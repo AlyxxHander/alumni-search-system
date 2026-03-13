@@ -1,0 +1,28 @@
+// SETUP (LOCAL)
+# 1. Masuk ke folder dan install dependencies
+cd alumni-search-system
+composer install
+
+# 2. Konfigurasi .env (update API keys)
+# Edit .env → isi SERPER_API_KEY dan GEMINI_API_KEY
+
+# 3. Migrasi & seed
+php artisan migrate --seed
+
+# 4. Jalankan server
+php artisan serve
+
+# 5. Akses di browser
+# http://localhost:8000
+# Login: admin@alumni.test / password
+
+# 6. Jalankan tracking manual (via CLI)
+php artisan alumni:track
+
+# 7. Jalankan queue worker (untuk proses async)
+php artisan queue:work
+
+
+// HOW TO RUN (LOCAL)
+php artisan serve
+php artisan queue:work

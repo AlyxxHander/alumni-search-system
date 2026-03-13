@@ -1,0 +1,46 @@
+Config:
+[
+    {
+        "id": 1,
+        "key": "afiliasi_utama",
+        "value": [
+            "UMM",
+            "Universitas Muhammadiyah Malang",
+            "Informatika"
+        ],
+        "created_at": "2026-03-11T13:44:55.000000Z",
+        "updated_at": "2026-03-11T13:44:55.000000Z"
+    },
+    {
+        "id": 2,
+        "key": "threshold_valid_otomatis",
+        "value": 0.8,
+        "created_at": "2026-03-11T13:44:55.000000Z",
+        "updated_at": "2026-03-11T13:44:55.000000Z"
+    },
+    {
+        "id": 3,
+        "key": "threshold_verifikasi_manual",
+        "value": 0.5,
+        "created_at": "2026-03-11T13:44:55.000000Z",
+        "updated_at": "2026-03-11T13:44:55.000000Z"
+    },
+    {
+        "id": 4,
+        "key": "sumber_aktif",
+        "value": [
+            "LINKEDIN"
+        ],
+        "created_at": "2026-03-11T13:44:55.000000Z",
+        "updated_at": "2026-03-13T06:35:23.000000Z"
+    },
+    {
+        "id": 5,
+        "key": "scheduler_interval",
+        "value": "daily",
+        "created_at": "2026-03-11T13:44:55.000000Z",
+        "updated_at": "2026-03-11T13:44:55.000000Z"
+    }
+]
+
+Generated Query: "Dhio" UMM Universitas Muhammadiyah Malang Informatika site:linkedin.com/in
