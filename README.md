@@ -18,14 +18,19 @@ Sistem beroperasi melalui siklus pelacakan cerdas yang terbagi menjadi 5 tahap u
 ## 🛠️ Technology Stack
 
 *   **Framework**: [Laravel 12.x](https://laravel.com)
-*   **Intelligence Engine**: [Google Gemini AI](https://deepmind.google/technologies/gemini/) (Model: `gemini-1.5-flash`)
+*   **Intelligence Engine**: [Google Gemini AI](https://deepmind.google/technologies/gemini/) (Model: `gemini-3.1-flash-lite-preview`)
 *   **Search Infrastructure**: [Serper.dev](https://serper.dev/) (Google Search API)
 *   **Database**: MySQL
-*   **Frontend**: Blade + Vanilla CSS (Modern Aesthetics, Responsive Design)
+*   **Frontend**: Blade + Tailwind CSS (Modern Aesthetics, Responsive Design)
+
+## 📦 Komponen Kunci
+
+*   **`AlumniService`**: Mengelola data master alumni dan status pelacakan.
+*   **`TrackingService`**: Mengorkestrasi pencarian Serper dan analisis Gemini.
+*   **`GeminiService`**: Menangani interaksi dengan API Google Gemini untuk skoring profil.
+*   **`SerperService`**: Mengelola query dan hasil dari Google Custom Search API.
 
 ## ✅ Quality Testing Results
-
-Berdasarkan aspek kualitas yang didefinisikan dalam dokumen desain (`2-Daily Project.md`), berikut adalah hasil evaluasi sistem:
 
 | Aspek Kualitas | Kriteria Uji | Hasil Evaluasi | Status |
 | :--- | :--- | :--- | :--- |
@@ -35,13 +40,6 @@ Berdasarkan aspek kualitas yang didefinisikan dalam dokumen desain (`2-Daily Pro
 | **Analisis Gemini** | Evaluasi timeline dan relevansi instansi oleh AI. | Prompt Gemini dioptimasi untuk mendeteksi anomali timeline (misal: bekerja sebelum lulus tanpa korelasi yang jelas). | ✅ Pass |
 | **Reliabilitas Data** | Mekanisme verifikasi manual untuk skor kandidat. | Dashboard Admin menyediakan antarmuka peninjauan yang memisahkan data pasti dengan data *probabilistic*. | ✅ Pass |
 | **Output Sistem** | Ekspor data hasil pelacakan ke format laporan resmi. | Mendukung ekspor ke Excel/PDF untuk kebutuhan pelaporan IKU (Indikator Kinerja Utama). | ✅ Pass |
-
-## 📦 Komponen Kunci
-
-*   **`AlumniService`**: Mengelola data master alumni dan status pelacakan.
-*   **`TrackingService`**: Mengorkestrasi pencarian Serper dan analisis Gemini.
-*   **`GeminiService`**: Menangani interaksi dengan API Google Gemini untuk skoring profil.
-*   **`SerperService`**: Mengelola query dan hasil dari Google Custom Search API.
 
 ---
 *Created for Alumni Career Tracking & Higher Education Quality Assurance.*
