@@ -45,28 +45,7 @@ class TrackAlumniJob implements ShouldQueue
 
         $allResults = [];
         $rawResponses = [];
-        $uniqueUrls = []; // To prevent duplicates between static and dynamic searches
 
-        // 1. Dynamic Search (Gemini-powered query)
-        $dynamicQuery = $gemini->generateSearchQuery($this->alumni->toArray());
-        if (!empty($dynamicQuery)) {
-            Log::info("Menjalankan Dynamic Search: " . $dynamicQuery);
-            $dynamicResponse = $serper->search($dynamicQuery);
-            if (!empty($dynamicResponse)) {
-                $rawResponses['dynamic_gemini'] = $dynamicResponse;
-                $results = $serper->extractResults($dynamicResponse);
-                foreach ($results as $res) {
-                    if (isset($res['url_profil']) && !in_array($res['url_profil'], $uniqueUrls)) {
-                        $res['sumber_enum'] = SumberPelacakan::LINKEDIN; // Default to LinkedIn or detect from URL
-                        $res['query_digunakan'] = $dynamicQuery;
-                        $allResults[] = $res;
-                        $uniqueUrls[] = $res['url_profil'];
-                    }
-                }
-            }
-        }
-
-        // 2. Static Search (Standard logic)
         foreach ($sumberAktif as $sumberStr) {
             $sumber = SumberPelacakan::tryFrom($sumberStr);
             if (!$sumber) continue;
@@ -81,12 +60,9 @@ class TrackAlumniJob implements ShouldQueue
 
             $results = $serper->extractResults($searchResponse);
             foreach ($results as $res) {
-                if (isset($res['url_profil']) && !in_array($res['url_profil'], $uniqueUrls)) {
-                    $res['sumber_enum'] = $sumber;
-                    $res['query_digunakan'] = $query;
-                    $allResults[] = $res;
-                    $uniqueUrls[] = $res['url_profil'];
-                }
+                $res['sumber_enum'] = $sumber;
+                $res['query_digunakan'] = $query;
+                $allResults[] = $res;
             }
         }
 

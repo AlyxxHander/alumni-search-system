@@ -11,60 +11,6 @@ class GeminiService
     protected string $model;
     protected string $baseUrl;
 
-    public function generateSearchQuery(array $alumniData): string
-    {
-        $prompt = $this->buildQueryPrompt($alumniData);
-
-        try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post("{$this->baseUrl}?key={$this->apiKey}", [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => $prompt],
-                        ],
-                    ],
-                ],
-            ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                // Clean up any quotes or markdown the AI might wrap around the query
-                return trim(str_replace(['"', '`'], '', $text));
-            }
-            
-            return "";
-        } catch (\Exception $e) {
-            Log::error('Gemini generateSearchQuery exception: ' . $e->getMessage());
-            return "";
-        }
-    }
-
-    protected function buildQueryPrompt(array $alumniData): string
-    {
-        $nama = $alumniData['nama_lengkap'] ?? '';
-        $prodi = $alumniData['prodi'] ?? '';
-        $afiliasi = implode(' ', TrackingConfig::getValue('afiliasi_utama', ['UMM', 'Informatika']));
-
-        return <<<PROMPT
-Tugas Anda adalah membuat 1 buah query pencarian Google (Search String) yang paling akurat untuk menemukan profil profesional (LinkedIn, Google Scholar, atau CV) milik alumni berikut:
-
-DATA ALUMNI:
-- Nama: {$nama}
-- Program Studi: {$prodi}
-- Institusi: {$afiliasi}
-
-INSTRUKSI:
-1. Buat query yang sangat spesifik tapi efektif.
-2. Gunakan operator pencarian jika perlu (seperti site:linkedin.com/in).
-3. HANYA kembalikan teks query saja tanpa penjelasan apapun, tanpa tanda kutip, dan tanpa markdown.
-
-QUERY:
-PROMPT;
-    }
-
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key', env('GEMINI_API_KEY', ''));
@@ -182,6 +128,7 @@ Anda adalah "Verifikator Alumni", sebuah sistem AI pintar untuk mendeteksi kecoc
 Tugas utama Anda adalah membandingkan "Data Referensi Berkuliah" milik seorang alumni, dengan rentetan "Hasil Pencarian Internet" (Google Scholar, LinkedIn, dsb).
 
 [DATA ALUMNI REFERENSI]
+- NIM: {$nim}
 - Nama Lengkap: {$namaLengkap}
 - Nama Panggilan: {$namaPanggilan}
 - Program Studi: {$prodi}

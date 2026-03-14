@@ -49,7 +49,7 @@ class SerperService
 
     public function buildQuery(Alumni $alumni, SumberPelacakan $sumber): string
     {
-        $afiliasi = TrackingConfig::getValue('afiliasi_utama', ['Informatika']);
+        $afiliasi = TrackingConfig::getValue('afiliasi_utama', ['UMM', 'Informatika']);
         $afiliasiStr = implode(' ', array_slice($afiliasi, 0, 2));
 
         $namaVariasi = $alumni->variasi_nama;
