@@ -2,7 +2,12 @@
 
 Alumni Search System adalah platform berbasis web yang dirancang untuk melacak dan memverifikasi data karir alumni secara otomatis menggunakan integrasi AI dan OSINT. Sistem ini menggabungkan kekuatan pencarian Google (via Serper.dev) dengan kecerdasan Natural Language Processing dari Google Gemini API untuk memastikan akurasi data yang tinggi.
 
-## 🛠️ Technology Stack
+## Admin Demo Account
+
+*   **Email**: admin@alumni.test
+*   **Password**: password
+
+## Technology Stack
 
 *   **Framework**: [Laravel 12.x](https://laravel.com)
 *   **Intelligence Engine**: [Google Gemini AI](https://deepmind.google/technologies/gemini/) (Model: `gemini-3.1-flash-lite-preview`)
@@ -10,7 +15,7 @@ Alumni Search System adalah platform berbasis web yang dirancang untuk melacak d
 *   **Database**: MySQL
 *   **Frontend**: Blade + Tailwind CSS (Modern Aesthetics, Responsive Design)
 
-## 🚀 Algoritma "Smart-Context Triangulation"
+## Algoritma "Smart-Context Triangulation"
 
 Sistem beroperasi melalui siklus pelacakan cerdas yang terbagi menjadi 5 tahap utama:
 
@@ -23,14 +28,14 @@ Sistem beroperasi melalui siklus pelacakan cerdas yang terbagi menjadi 5 tahap u
 4.  **Analisis & Skoring AI (Gemini API)**: Gemini menilai kecocokan identitas secara menyeluruh (timeline lulus vs riwayat kerja) dan mengembalikan skor probabilitas (0 - 1.0).
 5.  **Verifikasi & Laporan**: Hasil yang membutuhkan verifikasi manual akan ditinjau oleh Admin. Data akhir yang terverifikasi kemudian dapat diekspor ke format Excel/PDF.
 
-## 📦 Komponen Utama
+## Komponen Utama
 
 *   **`AlumniService`**: Mengelola data master alumni dan status pelacakan.
 *   **`TrackingService`**: Mengorkestrasi pencarian Serper dan analisis Gemini.
 *   **`GeminiService`**: Menangani interaksi dengan API Google Gemini untuk skoring profil.
 *   **`SerperService`**: Mengelola query dan hasil dari Google Custom Search API.
 
-## ✅ Quality Testing Results
+## Quality Testing Results
 
 | Aspek Kualitas | Kriteria Uji | Hasil Evaluasi | Status |
 | :--- | :--- | :--- | :--- |
