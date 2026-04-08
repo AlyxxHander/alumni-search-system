@@ -23,6 +23,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('alumni', AlumniController::class)->parameters([
         'alumni' => 'alumni'
     ]);
+    Route::post('alumni/{alumni}/unvalidate', [AlumniController::class, 'unvalidate'])->name('alumni.unvalidate');
 
     // Pelacakan
     Route::post('tracking/run', [TrackingController::class, 'runAll'])->name('tracking.run');

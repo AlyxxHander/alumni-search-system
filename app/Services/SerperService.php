@@ -18,7 +18,7 @@ class SerperService
         $this->apiKey = config('services.serper.api_key', env('SERPER_API_KEY', ''));
     }
 
-    public function search(string $query): array
+    public function search(string $query, int $num = 5): array
     {
         try {
             $response = Http::withHeaders([
@@ -28,7 +28,7 @@ class SerperService
                 'q' => $query,
                 'gl' => 'id',
                 'hl' => 'id',
-                'num' => 5,
+                'num' => $num,
             ]);
 
             if ($response->successful()) {
@@ -47,15 +47,130 @@ class SerperService
         }
     }
 
+    /**
+     * Multi-query search: coba beberapa variasi query untuk satu sumber,
+     * lalu gabungkan & deduplikasi hasilnya berdasarkan URL.
+     */
+    public function searchMultiQuery(Alumni $alumni, SumberPelacakan $sumber): array
+    {
+        $queries = $this->buildMultiQueries($alumni, $sumber);
+        $allOrganic = [];
+        $seenUrls = [];
+        $mergedResponse = [];
+
+        foreach ($queries as $query) {
+            $response = $this->search($query, $this->getNumResults($sumber));
+
+            if (empty($response)) continue;
+
+            // Simpan respons pertama sebagai base
+            if (empty($mergedResponse)) {
+                $mergedResponse = $response;
+                $mergedResponse['organic'] = [];
+            }
+
+            // Deduplikasi berdasarkan URL
+            foreach ($response['organic'] ?? [] as $item) {
+                $url = $item['link'] ?? '';
+                if ($url && !isset($seenUrls[$url])) {
+                    $seenUrls[$url] = true;
+                    $allOrganic[] = $item;
+                }
+            }
+        }
+
+        if (!empty($mergedResponse)) {
+            $mergedResponse['organic'] = $allOrganic;
+        }
+
+        return $mergedResponse;
+    }
+
+    /**
+     * Bangun multiple variasi query untuk akurasi lebih tinggi
+     */
+    public function buildMultiQueries(Alumni $alumni, SumberPelacakan $sumber): array
+    {
+        $namaKampus = TrackingConfig::getValue('nama_kampus', 'UMM');
+        $prodi = $alumni->prodi ?? '';
+        $fakultas = $alumni->fakultas ?? '';
+        $tahunMasuk = $alumni->tahun_masuk ?? '';
+        $tahunLulus = $alumni->tahun_lulus ?? '';
+        $namaLengkap = $alumni->nama_lengkap;
+        $namaPanggilan = $alumni->nama_panggilan;
+        $siteFilter = $sumber->siteFilter();
+
+        $queries = [];
+
+        // --- Query strategies berbeda per platform ---
+
+        if ($sumber === SumberPelacakan::LINKEDIN) {
+            // LinkedIn: nama + kampus sangat penting, tambahkan konteks tahun & fakultas
+            $queries[] = "\"{$namaLengkap}\" {$namaKampus} {$siteFilter}";
+
+            if ($prodi) {
+                $queries[] = "\"{$namaLengkap}\" \"{$prodi}\" {$siteFilter}";
+            }
+
+            if ($fakultas) {
+                $queries[] = "\"{$namaLengkap}\" \"{$fakultas}\" {$namaKampus} {$siteFilter}";
+            }
+
+            // Coba nama panggilan juga (banyak orang pakai nama panggilan di LinkedIn)
+            if ($namaPanggilan && $namaPanggilan !== $namaLengkap) {
+                $queries[] = "\"{$namaPanggilan}\" {$namaKampus} {$siteFilter}";
+            }
+
+        } elseif ($sumber === SumberPelacakan::GOOGLE_SCHOLAR) {
+            // Google Scholar: butuh nama + prodi/kampus
+            $queries[] = "\"{$namaLengkap}\" {$namaKampus} {$siteFilter}";
+
+            if ($prodi) {
+                $queries[] = "\"{$namaLengkap}\" \"{$prodi}\" {$namaKampus} {$siteFilter}";
+            }
+
+        } elseif (in_array($sumber, [SumberPelacakan::INSTAGRAM, SumberPelacakan::FACEBOOK, SumberPelacakan::TIKTOK])) {
+            // Sosial media: sering pakai nama panggilan, coba keduanya
+            $queries[] = "\"{$namaLengkap}\" {$siteFilter}";
+
+            if ($namaPanggilan && $namaPanggilan !== $namaLengkap) {
+                $queries[] = "\"{$namaPanggilan}\" {$siteFilter}";
+            }
+
+            // Tambahkan konteks kampus untuk mengurangi false positive
+            $queries[] = "\"{$namaLengkap}\" {$namaKampus} {$siteFilter}";
+
+        } else {
+            // GitHub dan lainnya
+            $queries[] = "\"{$namaLengkap}\" {$namaKampus} {$prodi} {$siteFilter}";
+
+            if ($namaPanggilan && $namaPanggilan !== $namaLengkap) {
+                $queries[] = "\"{$namaPanggilan}\" {$namaKampus} {$siteFilter}";
+            }
+        }
+
+        // Deduplikasi query yang sama
+        return array_values(array_unique($queries));
+    }
+
+    /**
+     * Tentukan jumlah hasil pencarian berdasarkan platform
+     */
+    protected function getNumResults(SumberPelacakan $sumber): int
+    {
+        return 3; // Limit maksimal pencarian menjadi 3 per source sesuai permintaan terbaru
+    }
+
+    /**
+     * Legacy buildQuery — tetap dipertahankan untuk kompatibilitas
+     */
     public function buildQuery(Alumni $alumni, SumberPelacakan $sumber): string
     {
-        $afiliasi = TrackingConfig::getValue('afiliasi_utama', ['UMM', 'Informatika']);
-        $afiliasiStr = implode(' ', array_slice($afiliasi, 0, 2));
+        $namaKampus = TrackingConfig::getValue('nama_kampus', 'UMM');
+        $prodi = $alumni->prodi ?? '';
+        $nama = $alumni->variasi_nama[0] ?? $alumni->nama_lengkap;
 
-        $namaVariasi = $alumni->variasi_nama;
-        $nama = $namaVariasi[0] ?? $alumni->nama_lengkap;
-
-        $query = "{$nama} {$afiliasiStr} {$sumber->siteFilter()}";
+        $query = "\"{$nama}\" {$namaKampus} {$prodi} {$sumber->siteFilter()}";
 
         return $query;
     }
@@ -90,8 +205,15 @@ class SerperService
 
     protected function extractLokasi(string $snippet): ?string
     {
-        // Simple extraction
-        $cities = ['Jakarta', 'Surabaya', 'Bandung', 'Malang', 'Yogyakarta', 'Semarang', 'Medan', 'Makassar', 'Bali', 'Denpasar'];
+        // Extended list of Indonesian cities
+        $cities = [
+            'Jakarta', 'Surabaya', 'Bandung', 'Malang', 'Yogyakarta', 'Semarang',
+            'Medan', 'Makassar', 'Bali', 'Denpasar', 'Bekasi', 'Tangerang', 'Depok',
+            'Bogor', 'Palembang', 'Balikpapan', 'Samarinda', 'Manado', 'Padang',
+            'Batam', 'Pekanbaru', 'Banjarmasin', 'Pontianak', 'Mataram', 'Kupang',
+            'Lampung', 'Solo', 'Surakarta', 'Cirebon', 'Mojokerto', 'Sidoarjo',
+            'Gresik', 'Kediri', 'Jember', 'Pasuruan', 'Probolinggo', 'Batu',
+        ];
         foreach ($cities as $city) {
             if (stripos($snippet, $city) !== false) {
                 return $city;

@@ -25,6 +25,22 @@ class TrackingResult extends Model
         'verified_at',
         'raw_search_response',
         'raw_gemini_response',
+        // Fields dari ekstraksi AI gemini per platform
+        'email',
+        'no_hp',
+        'linkedin',
+        'instagram',
+        'facebook',
+        'tiktok',
+        'tempat_bekerja',
+        'alamat_bekerja',
+        'posisi',
+        'jenis_pekerjaan',
+        'sosmed_tempat_bekerja',
+        'instansi_linkedin',
+        'instansi_instagram',
+        'instansi_facebook',
+        'instansi_tiktok',
     ];
 
     protected function casts(): array

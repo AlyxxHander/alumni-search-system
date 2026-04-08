@@ -1,0 +1,8 @@
+Ver 1 - PATCH
+- Make the Project
+
+Ver 2 - PATCH
+- More accuracy on the serper API (More accurate all together)
+- Add more data to find
+
+Ver 3 - PATCH

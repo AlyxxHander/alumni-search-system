@@ -26,7 +26,7 @@ class ConfigController extends Controller
             'threshold_valid_otomatis' => 'required|numeric|min:0|max:1',
             'threshold_verifikasi_manual' => 'required|numeric|min:0|max:1',
             'sumber_aktif' => 'required|array|min:1',
-            'sumber_aktif.*' => 'in:GOOGLE_SCHOLAR,LINKEDIN,GITHUB',
+            'sumber_aktif.*' => 'in:GOOGLE_SCHOLAR,LINKEDIN,GITHUB,INSTAGRAM,FACEBOOK,TIKTOK',
         ]);
 
         // Convert comma-separated string to array

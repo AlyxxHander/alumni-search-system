@@ -61,12 +61,14 @@
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Instansi Terkini</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lokasi</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Aksi</th>
             </tr>
         </thead>
         <tbody class="divide-y">
             @forelse($alumni as $a)
             @php
-                $bestResult = $a->trackingResults->first();
+                $bestResult = $a->trackingResults->where('status_verifikasi', \App\Enums\StatusVerifikasi::CONFIRMED)->first() 
+                            ?? $a->trackingResults->sortByDesc('skor_probabilitas')->first();
             @endphp
             <tr class="hover:bg-gray-50">
                 <td class="px-4 py-3 font-medium text-gray-800">{{ $a->nama_lengkap }}</td>
@@ -80,6 +82,15 @@
                 </td>
                 <td class="px-4 py-3 text-gray-600">{{ $bestResult?->instansi ?? '-' }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ $bestResult?->lokasi ?? '-' }}</td>
+                <td class="px-4 py-3 text-center">
+                    <form action="{{ route('alumni.unvalidate', $a) }}" method="POST" class="inline" 
+                          onsubmit="return confirm('Apakah Anda yakin ingin membatalkan validasi alumni ini? Data input utama tetap ada, namun alumni akan kembali ke antrean verifikasi manual.')">
+                        @csrf
+                        <button type="submit" class="text-orange-500 hover:text-orange-700 title='Batalkan Validasi'">
+                            <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        </button>
+                    </form>
+                </td>
             </tr>
             @empty
             <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">Belum ada data alumni yang terverifikasi.</td></tr>

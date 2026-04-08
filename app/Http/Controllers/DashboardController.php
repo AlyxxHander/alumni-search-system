@@ -20,12 +20,33 @@ class DashboardController extends Controller
             'sedang_dilacak' => Alumni::where('status_pelacakan', StatusPelacakan::SEDANG_DILACAK)->count(),
         ];
 
+        // Statistik jenis pekerjaan
+        $statsJenisPekerjaan = [
+            'pns' => Alumni::where('jenis_pekerjaan', 'PNS')->count(),
+            'swasta' => Alumni::where('jenis_pekerjaan', 'Swasta')->count(),
+            'wirausaha' => Alumni::where('jenis_pekerjaan', 'Wirausaha')->count(),
+            'lainnya' => Alumni::where('jenis_pekerjaan', 'Lainnya')->count(),
+            'belum_diisi' => Alumni::whereNull('jenis_pekerjaan')->count(),
+        ];
+
+        // Statistik kelengkapan data
+        $statsKelengkapan = [
+            'punya_sosmed' => Alumni::where(function ($q) {
+                $q->whereNotNull('linkedin')->orWhereNotNull('instagram')
+                  ->orWhereNotNull('facebook')->orWhereNotNull('tiktok');
+            })->count(),
+            'punya_kontak' => Alumni::where(function ($q) {
+                $q->whereNotNull('email')->orWhereNotNull('no_hp');
+            })->count(),
+            'punya_pekerjaan' => Alumni::whereNotNull('tempat_bekerja')->count(),
+        ];
+
         $pendingVerification = TrackingResult::with('alumni')
             ->pending()
             ->latest()
             ->take(5)
             ->get();
 
-        return view('dashboard', compact('totalAlumni', 'stats', 'pendingVerification'));
+        return view('dashboard', compact('totalAlumni', 'stats', 'statsJenisPekerjaan', 'statsKelengkapan', 'pendingVerification'));
     }
 }

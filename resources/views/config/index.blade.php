@@ -44,12 +44,14 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Sumber Pelacakan Aktif</label>
                 <div class="space-y-2">
                     @foreach(App\Enums\SumberPelacakan::cases() as $sumber)
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="sumber_aktif[]" value="{{ $sumber->value }}"
-                            {{ in_array($sumber->value, $config['sumber_aktif']) ? 'checked' : '' }}
-                            class="rounded border-gray-300">
-                        <span class="text-sm text-gray-700">{{ $sumber->label() }}</span>
-                    </label>
+                        @if(!in_array($sumber->value, ['GITHUB', 'GOOGLE_SCHOLAR', 'GABUNGAN']))
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" name="sumber_aktif[]" value="{{ $sumber->value }}"
+                                {{ in_array($sumber->value, $config['sumber_aktif']) ? 'checked' : '' }}
+                                class="rounded border-gray-300">
+                            <span class="text-sm text-gray-700">{{ $sumber->label() }}</span>
+                        </label>
+                        @endif
                     @endforeach
                 </div>
                 @error('sumber_aktif') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror

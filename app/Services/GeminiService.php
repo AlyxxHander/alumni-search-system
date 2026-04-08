@@ -39,20 +39,71 @@ class GeminiService
                     'responseSchema' => [
                         'type' => 'object',
                         'properties' => [
-                            'best_index' => [
-                                'type' => 'integer',
-                                'description' => 'Index (mulai dari 0) dari profil hasil penelusuran yang paling menggambarkan alumni ini',
+                            'best_matches' => [
+                                'type' => 'array',
+                                'description' => 'Daftar satu profil terbaik untuk SETIAP platform. Hanya masukkan platform yang memiliki setidaknya satu kecocokan wajar.',
+                                'items' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'platform' => ['type' => 'string'],
+                                        'best_index' => ['type' => 'integer'],
+                                        'skor' => ['type' => 'number'],
+                                        'alasan' => ['type' => 'string'],
+                                        'extracted_data' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'email' => ['type' => 'string'],
+                                                'no_hp' => ['type' => 'string'],
+                                                'linkedin' => ['type' => 'string'],
+                                                'instagram' => ['type' => 'string'],
+                                                'facebook' => ['type' => 'string'],
+                                                'tiktok' => ['type' => 'string'],
+                                                'tempat_bekerja' => ['type' => 'string'],
+                                                'alamat_bekerja' => ['type' => 'string'],
+                                                'posisi' => ['type' => 'string'],
+                                                'jenis_pekerjaan' => ['type' => 'string'],
+                                                'sosmed_tempat_bekerja' => ['type' => 'string'],
+                                                'instansi_linkedin' => ['type' => 'string'],
+                                                'instansi_instagram' => ['type' => 'string'],
+                                                'instansi_facebook' => ['type' => 'string'],
+                                                'instansi_tiktok' => ['type' => 'string'],
+                                            ]
+                                        ]
+                                    ],
+                                    'required' => ['platform', 'best_index', 'skor', 'alasan', 'extracted_data'],
+                                ],
                             ],
-                            'skor' => [
+                            'unified_data' => [
+                                'type' => 'object',
+                                'description' => 'GABUNGAN data terbaik yang dikonsolidasikan dari seluruh platform hasil pencarian untuk profil alumni ini.',
+                                'properties' => [
+                                    'email' => ['type' => 'string'],
+                                    'no_hp' => ['type' => 'string'],
+                                    'linkedin' => ['type' => 'string'],
+                                    'instagram' => ['type' => 'string'],
+                                    'facebook' => ['type' => 'string'],
+                                    'tiktok' => ['type' => 'string'],
+                                    'tempat_bekerja' => ['type' => 'string'],
+                                    'alamat_bekerja' => ['type' => 'string'],
+                                    'posisi' => ['type' => 'string'],
+                                    'jenis_pekerjaan' => ['type' => 'string', 'description' => 'PNS, Swasta, Wirausaha, atau Lainnya'],
+                                    'sosmed_tempat_bekerja' => ['type' => 'string'],
+                                    'instansi_linkedin' => ['type' => 'string'],
+                                    'instansi_instagram' => ['type' => 'string'],
+                                    'instansi_facebook' => ['type' => 'string'],
+                                    'instansi_tiktok' => ['type' => 'string'],
+                                ]
+                            ],
+                            'skor_keseluruhan' => [
                                 'type' => 'number',
-                                'description' => 'Skor probabilitas kecocokan identitas untuk profil terbaik tersebut antara 0.0 sampai 1.0',
+                                'description' => 'Skor total (0.0 - 1.0) tingkat keyakinan bahwa profil gabungan ini merujuk alumni yang benar.',
                             ],
-                            'alasan' => [
+                            'alasan_keseluruhan' => [
                                 'type' => 'string',
-                                'description' => 'Alasan logis dan komprehensif mengapa profil tersebut cocok/tidak cocok dan dibandingkan ke indeks lainnya',
+                                'description' => 'Ringkasan bukti gabungan dari berbagai platform.',
                             ],
                         ],
-                        'required' => ['best_index', 'skor', 'alasan'],
+                        'required' => ['best_matches', 'unified_data', 'skor_keseluruhan', 'alasan_keseluruhan'],
                     ],
                 ],
             ]);
@@ -62,17 +113,17 @@ class GeminiService
                 $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
                 if ($text) {
-                    // Extract JSON if it's wrapped in markdown ```json ... ```
                     if (preg_match('/```(?:json)?(.*?)```/s', $text, $matches)) {
                         $text = trim($matches[1]);
                     }
 
                     $result = json_decode($text, true);
-                    if ($result && isset($result['skor']) && isset($result['best_index'])) {
+                    if ($result && isset($result['best_matches']) && isset($result['skor_keseluruhan'])) {
                         return [
-                            'best_index' => (int) $result['best_index'],
-                            'skor' => (float) min(1.0, max(0.0, $result['skor'])),
-                            'alasan' => $result['alasan'] ?? 'Tidak ada alasan yang diberikan',
+                            'best_matches' => $result['best_matches'],
+                            'unified_data' => $result['unified_data'] ?? [],
+                            'skor_keseluruhan' => (float) min(1.0, max(0.0, $result['skor_keseluruhan'])),
+                            'alasan_keseluruhan' => $result['alasan_keseluruhan'] ?? 'Tidak ada alasan yang diberikan',
                             'raw_response' => $data,
                         ];
                     } else {
@@ -86,10 +137,10 @@ class GeminiService
                 'body' => $response->body(),
             ]);
 
-            return ['best_index' => 0, 'skor' => 0.0, 'alasan' => "Gagal menganalisis. HTTP Status: " . $response->status(), 'raw_response' => ["alasan" => "API Error: " . $response->status()]];
+            return ['best_matches' => [], 'skor_keseluruhan' => 0.0, 'alasan_keseluruhan' => "Gagal menganalisis. HTTP Status: " . $response->status(), 'raw_response' => ["alasan_keseluruhan" => "API Error: " . $response->status()]];
         } catch (\Exception $e) {
             Log::error('Gemini API exception: ' . $e->getMessage());
-            return ['best_index' => 0, 'skor' => 0.0, 'alasan' => 'Error: ' . $e->getMessage(), 'raw_response' => ["alasan" => 'Exception: ' . $e->getMessage()]];
+            return ['best_matches' => [], 'skor_keseluruhan' => 0.0, 'alasan_keseluruhan' => 'Error: ' . $e->getMessage(), 'raw_response' => ["alasan_keseluruhan" => 'Exception: ' . $e->getMessage()]];
         }
     }
 
@@ -99,7 +150,10 @@ class GeminiService
         $namaLengkap = $dataAsli['nama_lengkap'];
         $namaPanggilan = $dataAsli['nama_panggilan'];
         $prodi = $dataAsli['prodi'];
-        $tahunLulus = $dataAsli['tahun_lulus'];
+        $fakultas = $dataAsli['fakultas'] ?? 'Tidak diketahui';
+        $tahunMasuk = $dataAsli['tahun_masuk'] ?? 'Tidak diketahui';
+        $tanggalLulus = $dataAsli['tanggal_lulus'] ?? 'Tidak diketahui';
+        $tahunLulus = $dataAsli['tahun_lulus'] ?? 'Tidak diketahui';
         $gelar = $dataAsli['gelar_akademik'];
 
         $listProfilText = "";
@@ -123,17 +177,31 @@ class GeminiService
             }
         }
 
+        // Hitung estimasi tahun aktif setelah lulus
+        $estimasiKarir = '';
+        if ($tahunLulus && $tahunLulus !== 'Tidak diketahui') {
+            $tahunSekarang = date('Y');
+            $lamaKerja = $tahunSekarang - (int) $tahunLulus;
+            if ($lamaKerja > 0) {
+                $estimasiKarir = "Alumni ini sudah lulus sekitar {$lamaKerja} tahun yang lalu, sehingga kemungkinan sudah memiliki pengalaman kerja yang cukup.";
+            }
+        }
+
         return <<<PROMPT
-Anda adalah "Verifikator Alumni", sebuah sistem AI pintar untuk mendeteksi kecocokan identitas.
-Tugas utama Anda adalah membandingkan "Data Referensi Berkuliah" milik seorang alumni, dengan rentetan "Hasil Pencarian Internet" (Google Scholar, LinkedIn, dsb).
+Anda adalah "Verifikator Alumni", sebuah sistem AI pintar untuk mendeteksi kecocokan identitas dan mengekstrak informasi kontak/pekerjaan.
+Tugas utama Anda adalah membandingkan "Data Referensi Berkuliah" milik seorang alumni, dengan rentetan "Hasil Pencarian Internet" (Google Scholar, LinkedIn, Instagram, Facebook, TikTok, dsb).
 
 [DATA ALUMNI REFERENSI]
 - NIM: {$nim}
 - Nama Lengkap: {$namaLengkap}
 - Nama Panggilan: {$namaPanggilan}
+- Fakultas: {$fakultas}
 - Program Studi: {$prodi}
-- Tahun Lulus: {$tahunLulus}
+- Tahun Masuk: {$tahunMasuk}
+- Tanggal Lulus: {$tanggalLulus}
+- Tahun Lulus (Ekstraksi): {$tahunLulus}
 - Gelar Akademik (terakhir): {$gelar}
+{$estimasiKarir}
 
 [HASIL PENCARIAN INTERNET]
 {$listProfilText}
@@ -141,13 +209,26 @@ Tugas utama Anda adalah membandingkan "Data Referensi Berkuliah" milik seorang a
 [INSTRUKSI WAJIB UNTUK PENILAIAN]
 1. Baca dengan teliti setiap [INDEX] hasil pencarian di atas.
 2. Cari keselarasan kuat. Profil yang valid biasanya menyebutkan Nama yang mirip DAN/ATAU Program Studi ("Singkatan dari Prodi", atau "Fakultas") DAN kampus afiliasi terkait alumni ini. Jika ada penyebutan tahun yang masuk akal dengan masa pasca-kelulusan, beri poin plus.
-3. Tentukan 1 buah "best_index" (Paling Mewakili). Jika tidak ada satupun yang mewakili atau semuanya membahas orang/topik lain sama sekali, tetapkan "best_index" ke 0.
-4. Tentukan "skor" secara objektif (angka desimal 0.0 hingga 1.0):
-   - Skor Tinggi (0.8 s/d 1.0): Tersedia kecocokan Nama yang akurat, dan secara eksplisit menyinggung identitas kampus, jurusan akademik, nama pekerjaan/title/gelar yang jelas relevan.
-   - Skor Menengah (0.5 s/d 0.7): Ada kemiripan nama kuat, tetapi informasi kampus/prodi/industri meragukan atau tidak secara eksplisit tertera di deskripsi snippet, namun ada kemungkinan itu adalah orang yang sama (misal terdeteksi lokasi yang sama dll).
-   - Skor Rendah (0.1 s/d 0.4): Nama agak mirip tapi universitas/bidang kerjanya salah kaprah (seperti jurusan Informatika tapi hasil snippet adalah Dokter). Orang yang berbeda.
-   - Skor 0.0: Tidak ada irisan kecocokan sama sekali (Irrelevan mutlak), atau hasil pencarian kosong.
-5. Pada kolom "alasan", tulis narasi penjelasan berbahasa Indonesia yang terstruktur, rinci, analitis, dan langsung pada intinya (misal: "Profil Index 1 adalah yang paling akurat dengan Skor 0.9 karena secara langsung mencantumkan profil LinkedIn dengan gelar Sarjana Komputer beserta universitas yang sesuai, sementara indeks lainnya adalah profil untuk entitas dengan nama serupa namun berbeda bidang..."). JANGAN menyebut diri Anda sebagai AI.
+3. KONTEKS PENTING UNTUK PENCOCOKAN:
+   - Fakultas "{$fakultas}" dan Program Studi "{$prodi}" adalah kunci utama identifikasi. Jika profil menyebutkan fakultas/prodi yang SAMA atau sinonimnya, itu sangat meningkatkan kecocokan.
+   - Tahun Masuk "{$tahunMasuk}" dan Tahun Lulus "{$tahunLulus}" membantu menentukan timeline.
+   - Nama panggilan "{$namaPanggilan}" sering digunakan di sosial media.
+4. PEMILIHAN PER PLATFORM: Dari hasil pencarian di atas, kamu WAJIB memilih SATU hasil 'terbaik' untuk **SETIAP** platform yang muncul. Meskipun semua hasil pada suatu platform tidak ada yang mirip sama sekali, kamu tetap HARUS memilih salah satu representasi (pilih SATU indeks yang memang berasal/milik dari platform tersebut) dan memberinya skor 0.0. Jangan lewatkan satu platform pun yang ada di daftar. Hasilkan mapping semua platform ini ke dalam `best_matches`.
+5. SKOR INDIVIDUAL: Untuk setiap profil pilihan (0.0 hingga 1.0):
+   - Skor Tinggi (0.8 - 1.0): Nama, kampus, akademik, pekerjaan jelas cocok.
+   - Skor Menengah (0.5 - 0.7): Kemiripan nama tapi konteks parsial/ragu.
+   - Skor Rendah (0.1 - 0.4): Nama agak mirip, beda pekerjaan jauh.
+   - Skor 0.0: Tidak ada irisan kecocokan sama sekali (Irrelevan mutlak).
+6. SKOR KESELURUHAN & ALASAN KESELURUHAN: Gabungkan tingkat keyakinan dari seluruh profil yang ditemukan. Jika ada satu profil ber-skor sangat tinggi (misal LinkedIn 0.9), `skor_keseluruhan` harus tinggi (di atas 0.8) karena kita yakin orang tersebut ditemukan. Jelaskan secara ringkas di `alasan_keseluruhan`.
+
+[INSTRUKSI TAMBAHAN: EKSTRAKSI DATA INDIVIDUAL & GABUNGAN]
+7. Untuk SETIAP profil yang Anda pilih dalam `best_matches`, Anda WAJIB melakukan ekstraksi informasi (kontak, pekerjaan, URL sosmed) yang tersedia di profil tersebut ke dalam field `extracted_data`.
+8. EKSTRAKSI GABUNGAN (`unified_data`): Ini adalah bagian terpenting. Anda harus membuat satu profil "paling akurat" dengan menggabungkan semua temuan dari semua platform.
+   - Jika platform A punya No HP dan platform B punya Email, gabungkan keduanya di `unified_data`.
+   - Jika ada konflik (misal dua tempat kerja berbeda), pilih yang menurut Anda paling baru/update berdasarkan konteks (misal LinkedIn biasanya lebih update daripada Facebook lama).
+   - Pastikan semua link sosial media yang valid (LinkedIn, IG, FB, TikTok) masuk ke field yang sesuai di `unified_data`.
+9. Lakukan ekstraksi ini bahkan jika skor profil tersebut rendah (0.0 - 0.4), karena pengguna tetap ingin mendapatkan data tersebut jika memang ada di hasil pencarian.
+10. Jika suatu informasi tidak ditemukan, biarkan string kosong "". Jangan mengarang data.
 PROMPT;
     }
 }

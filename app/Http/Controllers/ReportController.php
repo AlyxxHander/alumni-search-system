@@ -79,24 +79,42 @@ class ReportController extends Controller
             "Expires"             => "0"
         ];
 
-        $columns = ['NIM', 'Nama Lengkap', 'Program Studi', 'Tahun Lulus', 'Status Pelacakan', 'Instansi Terkini', 'Lokasi', 'URL Profil'];
+        $columns = [
+            'No.', 'Nama', 'NIM', 'Jurusan', 'Tahun Lulus', 'Email', 'Nomor Hp',
+            'Tempat Bekerja', 'Alamat Bekerja', 'Posisi / Jabatan', 'Kategori Pekerjaan',
+            'Linkedin (Alumni)', 'Instagram (Alumni)', 'Facebook (Alumni)', 'Tiktok (Alumni)',
+            'Linkedin (Instansi)', 'Instagram (Instansi)', 'Facebook (Instansi)', 'Tiktok (Instansi)'
+        ];
 
         $callback = function() use($alumniData, $columns) {
             $file = fopen('php://output', 'w');
+            // UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($file, $columns);
 
+            $no = 1;
             foreach ($alumniData as $alumni) {
-                $bestResult = $alumni->trackingResults->first();
-                $row['NIM']  = $alumni->nim;
-                $row['Nama Lengkap']    = $alumni->nama_lengkap;
-                $row['Program Studi']  = $alumni->prodi;
-                $row['Tahun Lulus']  = $alumni->tahun_lulus;
-                $row['Status Pelacakan']  = $alumni->status_pelacakan->label();
-                $row['Instansi Terkini']  = $bestResult?->instansi ?? '-';
-                $row['Lokasi']  = $bestResult?->lokasi ?? '-';
-                $row['URL Profil']  = $bestResult?->url_profil ?? '-';
-
-                fputcsv($file, array($row['NIM'], $row['Nama Lengkap'], $row['Program Studi'], $row['Tahun Lulus'], $row['Status Pelacakan'], $row['Instansi Terkini'], $row['Lokasi'], $row['URL Profil']));
+                fputcsv($file, [
+                    $no++,
+                    $alumni->nama_lengkap,
+                    $alumni->nim,
+                    $alumni->prodi,
+                    $alumni->tahun_lulus,
+                    $alumni->email ?? '-',
+                    $alumni->no_hp ?? '-',
+                    $alumni->tempat_bekerja ?? '-',
+                    $alumni->alamat_bekerja ?? '-',
+                    $alumni->posisi ?? '-',
+                    $alumni->jenis_pekerjaan ?? '-',
+                    $alumni->linkedin ?? '-',
+                    $alumni->instagram ?? '-',
+                    $alumni->facebook ?? '-',
+                    $alumni->tiktok ?? '-',
+                    $alumni->instansi_linkedin ?? '-',
+                    $alumni->instansi_instagram ?? '-',
+                    $alumni->instansi_facebook ?? '-',
+                    $alumni->instansi_tiktok ?? '-',
+                ]);
             }
 
             fclose($file);

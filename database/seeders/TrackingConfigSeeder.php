@@ -24,7 +24,7 @@ class TrackingConfigSeeder extends Seeder
             ],
             [
                 'key' => 'sumber_aktif',
-                'value' => ['GOOGLE_SCHOLAR', 'LINKEDIN', 'GITHUB'],
+                'value' => ['GOOGLE_SCHOLAR', 'LINKEDIN', 'GITHUB', 'INSTAGRAM', 'FACEBOOK', 'TIKTOK'],
             ],
             [
                 'key' => 'scheduler_interval',

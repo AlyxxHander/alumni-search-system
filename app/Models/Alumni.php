@@ -14,17 +14,40 @@ class Alumni extends Model
         'nim',
         'nama_lengkap',
         'nama_panggilan',
-        'inisial_belakang',
         'prodi',
         'tahun_lulus',
         'gelar_akademik',
         'status_pelacakan',
+        'skor_keseluruhan',
+        // Data akademik tambahan
+        'tahun_masuk',
+        'tanggal_lulus',
+        'fakultas',
+        // Kontak (diisi otomatis oleh sistem)
+        'email',
+        'no_hp',
+        // Sosial media (diisi otomatis oleh sistem)
+        'linkedin',
+        'instagram',
+        'facebook',
+        'tiktok',
+        // Data pekerjaan (diisi otomatis oleh sistem)
+        'tempat_bekerja',
+        'alamat_bekerja',
+        'posisi',
+        'jenis_pekerjaan',
+        'sosmed_tempat_bekerja',
+        'instansi_linkedin',
+        'instansi_instagram',
+        'instansi_facebook',
+        'instansi_tiktok',
     ];
 
     protected function casts(): array
     {
         return [
             'status_pelacakan' => StatusPelacakan::class,
+            'skor_keseluruhan' => 'float',
         ];
     }
 
@@ -61,7 +84,31 @@ class Alumni extends Model
         return array_values(array_unique(array_filter([
             $this->nama_lengkap,
             $this->nama_panggilan,
-            $this->inisial_belakang,
         ])));
+    }
+
+    /**
+     * Check if alumni has any social media data
+     */
+    public function getHasSocialMediaAttribute(): bool
+    {
+        return !empty($this->linkedin) || !empty($this->instagram)
+            || !empty($this->facebook) || !empty($this->tiktok);
+    }
+
+    /**
+     * Check if alumni has employment data
+     */
+    public function getHasEmploymentDataAttribute(): bool
+    {
+        return !empty($this->tempat_bekerja) || !empty($this->posisi);
+    }
+
+    /**
+     * Check if alumni has contact data
+     */
+    public function getHasContactDataAttribute(): bool
+    {
+        return !empty($this->email) || !empty($this->no_hp);
     }
 }
