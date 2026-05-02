@@ -22,3 +22,5 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+scraper/__pycache__/
+scraper/*.pyc

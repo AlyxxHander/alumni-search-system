@@ -79,17 +79,86 @@
     </div>
 </div>
 
-{{-- Quick Actions --}}
-<div class="flex gap-3 mb-6">
-    <form action="{{ route('tracking.run') }}" method="POST">
-        @csrf
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm">
-            🚀 Jalankan Pelacakan
-        </button>
-    </form>
-    <a href="{{ route('alumni.create') }}" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm">
-        ➕ Tambah Alumni
-    </a>
+{{-- Bulk Tracking Progress --}}
+<div class="mb-6">
+    <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">🚀 Bulk Tracking Progress</h3>
+    <div class="bg-white rounded-lg shadow p-6">
+        {{-- Progress Bar --}}
+        <div class="mb-4">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-700">Progress Pelacakan</span>
+                <span class="text-sm font-bold text-blue-600">{{ $bulkStats['percent'] }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+                     style="width: {{ min($bulkStats['percent'], 100) }}%"></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>{{ number_format($bulkStats['processed_alumni']) }} terproses</span>
+                <span>{{ number_format($bulkStats['total_alumni']) }} total</span>
+            </div>
+        </div>
+
+        {{-- Batch Stats --}}
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-gray-500">Batch Total</p>
+                <p class="text-lg font-bold text-gray-700">{{ $bulkStats['total_batches'] }}</p>
+            </div>
+            <div class="bg-yellow-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-yellow-600">Antrian</p>
+                <p class="text-lg font-bold text-yellow-700">{{ $bulkStats['queued'] }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-blue-600">Diproses</p>
+                <p class="text-lg font-bold text-blue-700">{{ $bulkStats['processing'] }}</p>
+            </div>
+            <div class="bg-green-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-green-600">Selesai</p>
+                <p class="text-lg font-bold text-green-700">{{ $bulkStats['completed'] }}</p>
+            </div>
+            <div class="bg-red-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-red-600">Gagal</p>
+                <p class="text-lg font-bold text-red-700">{{ $bulkStats['failed'] }}</p>
+            </div>
+        </div>
+
+        {{-- Actions --}}
+        <div class="flex flex-wrap gap-3 items-end">
+            {{-- Bulk Track Form --}}
+            <form action="{{ route('tracking.run-bulk') }}" method="POST" class="flex flex-wrap gap-2 items-end">
+                @csrf
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Batch Size</label>
+                    <input type="number" name="batch_size" value="5" min="1" max="20"
+                           class="w-20 px-2 py-1.5 border rounded-md text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Limit (0=semua)</label>
+                    <input type="number" name="limit" value="0" min="0"
+                           class="w-24 px-2 py-1.5 border rounded-md text-sm">
+                </div>
+                <button type="submit" class="bg-purple-600 text-white px-4 py-1.5 rounded-md hover:bg-purple-700 text-sm font-medium">
+                    ⚡ Bulk Track (Playwright)
+                </button>
+            </form>
+
+            {{-- Divider --}}
+            <div class="border-l h-8 mx-1"></div>
+
+            {{-- Single Track (legacy Serper) --}}
+            <form action="{{ route('tracking.run') }}" method="POST">
+                @csrf
+                <button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 text-sm">
+                    🔍 Track (Serper API)
+                </button>
+            </form>
+
+            <a href="{{ route('alumni.create') }}" class="bg-green-600 text-white px-4 py-1.5 rounded-md hover:bg-green-700 text-sm">
+                ➕ Tambah Alumni
+            </a>
+        </div>
+    </div>
 </div>
 
 {{-- Pending Verification --}}

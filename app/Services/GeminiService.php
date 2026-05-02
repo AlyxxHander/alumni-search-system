@@ -23,125 +23,147 @@ class GeminiService
     {
         $prompt = $this->buildBatchPrompt($dataAsli, $potonganInfoList);
 
-        try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post("{$this->baseUrl}?key={$this->apiKey}", [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => $prompt],
+        $maxRetries = 3;
+        $retryDelay = 5;
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                ])->post("{$this->baseUrl}?key={$this->apiKey}", [
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => $prompt],
+                            ],
                         ],
                     ],
-                ],
-                'generationConfig' => [
-                    'responseMimeType' => 'application/json',
-                    'responseSchema' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'best_matches' => [
-                                'type' => 'array',
-                                'description' => 'Daftar satu profil terbaik untuk SETIAP platform. Hanya masukkan platform yang memiliki setidaknya satu kecocokan wajar.',
-                                'items' => [
-                                    'type' => 'object',
-                                    'properties' => [
-                                        'platform' => ['type' => 'string'],
-                                        'best_index' => ['type' => 'integer'],
-                                        'skor' => ['type' => 'number'],
-                                        'alasan' => ['type' => 'string'],
-                                        'extracted_data' => [
-                                            'type' => 'object',
-                                            'properties' => [
-                                                'email' => ['type' => 'string'],
-                                                'no_hp' => ['type' => 'string'],
-                                                'linkedin' => ['type' => 'string'],
-                                                'instagram' => ['type' => 'string'],
-                                                'facebook' => ['type' => 'string'],
-                                                'tiktok' => ['type' => 'string'],
-                                                'tempat_bekerja' => ['type' => 'string'],
-                                                'alamat_bekerja' => ['type' => 'string'],
-                                                'posisi' => ['type' => 'string'],
-                                                'jenis_pekerjaan' => ['type' => 'string'],
-                                                'sosmed_tempat_bekerja' => ['type' => 'string'],
-                                                'instansi_linkedin' => ['type' => 'string'],
-                                                'instansi_instagram' => ['type' => 'string'],
-                                                'instansi_facebook' => ['type' => 'string'],
-                                                'instansi_tiktok' => ['type' => 'string'],
+                    'generationConfig' => [
+                        'responseMimeType' => 'application/json',
+                        'responseSchema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'best_matches' => [
+                                    'type' => 'array',
+                                    'description' => 'Daftar satu profil terbaik untuk SETIAP platform. Hanya masukkan platform yang memiliki setidaknya satu kecocokan wajar.',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'platform' => ['type' => 'string'],
+                                            'best_index' => ['type' => 'integer'],
+                                            'skor' => ['type' => 'number'],
+                                            'alasan' => ['type' => 'string'],
+                                            'extracted_data' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'email' => ['type' => 'string'],
+                                                    'no_hp' => ['type' => 'string'],
+                                                    'linkedin' => ['type' => 'string'],
+                                                    'instagram' => ['type' => 'string'],
+                                                    'facebook' => ['type' => 'string'],
+                                                    'tiktok' => ['type' => 'string'],
+                                                    'tempat_bekerja' => ['type' => 'string'],
+                                                    'alamat_bekerja' => ['type' => 'string'],
+                                                    'posisi' => ['type' => 'string'],
+                                                    'jenis_pekerjaan' => ['type' => 'string'],
+                                                    'sosmed_tempat_bekerja' => ['type' => 'string'],
+                                                    'instansi_linkedin' => ['type' => 'string'],
+                                                    'instansi_instagram' => ['type' => 'string'],
+                                                    'instansi_facebook' => ['type' => 'string'],
+                                                    'instansi_tiktok' => ['type' => 'string'],
+                                                ]
                                             ]
-                                        ]
+                                        ],
+                                        'required' => ['platform', 'best_index', 'skor', 'alasan', 'extracted_data'],
                                     ],
-                                    'required' => ['platform', 'best_index', 'skor', 'alasan', 'extracted_data'],
+                                ],
+                                'unified_data' => [
+                                    'type' => 'object',
+                                    'description' => 'GABUNGAN data terbaik yang dikonsolidasikan dari seluruh platform hasil pencarian untuk profil alumni ini.',
+                                    'properties' => [
+                                        'email' => ['type' => 'string'],
+                                        'no_hp' => ['type' => 'string'],
+                                        'linkedin' => ['type' => 'string'],
+                                        'instagram' => ['type' => 'string'],
+                                        'facebook' => ['type' => 'string'],
+                                        'tiktok' => ['type' => 'string'],
+                                        'tempat_bekerja' => ['type' => 'string'],
+                                        'alamat_bekerja' => ['type' => 'string'],
+                                        'posisi' => ['type' => 'string'],
+                                        'jenis_pekerjaan' => ['type' => 'string', 'description' => 'PNS, Swasta, Wirausaha, atau Lainnya'],
+                                        'sosmed_tempat_bekerja' => ['type' => 'string'],
+                                        'instansi_linkedin' => ['type' => 'string'],
+                                        'instansi_instagram' => ['type' => 'string'],
+                                        'instansi_facebook' => ['type' => 'string'],
+                                        'instansi_tiktok' => ['type' => 'string'],
+                                    ]
+                                ],
+                                'skor_keseluruhan' => [
+                                    'type' => 'number',
+                                    'description' => 'Skor total (0.0 - 1.0) tingkat keyakinan bahwa profil gabungan ini merujuk alumni yang benar.',
+                                ],
+                                'alasan_keseluruhan' => [
+                                    'type' => 'string',
+                                    'description' => 'Ringkasan bukti gabungan dari berbagai platform.',
                                 ],
                             ],
-                            'unified_data' => [
-                                'type' => 'object',
-                                'description' => 'GABUNGAN data terbaik yang dikonsolidasikan dari seluruh platform hasil pencarian untuk profil alumni ini.',
-                                'properties' => [
-                                    'email' => ['type' => 'string'],
-                                    'no_hp' => ['type' => 'string'],
-                                    'linkedin' => ['type' => 'string'],
-                                    'instagram' => ['type' => 'string'],
-                                    'facebook' => ['type' => 'string'],
-                                    'tiktok' => ['type' => 'string'],
-                                    'tempat_bekerja' => ['type' => 'string'],
-                                    'alamat_bekerja' => ['type' => 'string'],
-                                    'posisi' => ['type' => 'string'],
-                                    'jenis_pekerjaan' => ['type' => 'string', 'description' => 'PNS, Swasta, Wirausaha, atau Lainnya'],
-                                    'sosmed_tempat_bekerja' => ['type' => 'string'],
-                                    'instansi_linkedin' => ['type' => 'string'],
-                                    'instansi_instagram' => ['type' => 'string'],
-                                    'instansi_facebook' => ['type' => 'string'],
-                                    'instansi_tiktok' => ['type' => 'string'],
-                                ]
-                            ],
-                            'skor_keseluruhan' => [
-                                'type' => 'number',
-                                'description' => 'Skor total (0.0 - 1.0) tingkat keyakinan bahwa profil gabungan ini merujuk alumni yang benar.',
-                            ],
-                            'alasan_keseluruhan' => [
-                                'type' => 'string',
-                                'description' => 'Ringkasan bukti gabungan dari berbagai platform.',
-                            ],
+                            'required' => ['best_matches', 'unified_data', 'skor_keseluruhan', 'alasan_keseluruhan'],
                         ],
-                        'required' => ['best_matches', 'unified_data', 'skor_keseluruhan', 'alasan_keseluruhan'],
                     ],
-                ],
-            ]);
+                ]);
 
-            if ($response->successful()) {
-                $data = $response->json();
-                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
-                if ($text) {
-                    if (preg_match('/```(?:json)?(.*?)```/s', $text, $matches)) {
-                        $text = trim($matches[1]);
-                    }
+                    if ($text) {
+                        if (preg_match('/```(?:json)?(.*?)```/s', $text, $matches)) {
+                            $text = trim($matches[1]);
+                        }
 
-                    $result = json_decode($text, true);
-                    if ($result && isset($result['best_matches']) && isset($result['skor_keseluruhan'])) {
-                        return [
-                            'best_matches' => $result['best_matches'],
-                            'unified_data' => $result['unified_data'] ?? [],
-                            'skor_keseluruhan' => (float) min(1.0, max(0.0, $result['skor_keseluruhan'])),
-                            'alasan_keseluruhan' => $result['alasan_keseluruhan'] ?? 'Tidak ada alasan yang diberikan',
-                            'raw_response' => $data,
-                        ];
-                    } else {
-                        Log::error("Gemini Parse Error. Text: " . $text);
+                        $result = json_decode($text, true);
+                        if ($result && isset($result['best_matches']) && isset($result['skor_keseluruhan'])) {
+                            return [
+                                'best_matches' => $result['best_matches'],
+                                'unified_data' => $result['unified_data'] ?? [],
+                                'skor_keseluruhan' => (float) min(1.0, max(0.0, $result['skor_keseluruhan'])),
+                                'alasan_keseluruhan' => $result['alasan_keseluruhan'] ?? 'Tidak ada alasan yang diberikan',
+                                'raw_response' => $data,
+                            ];
+                        } else {
+                            Log::error("Gemini Parse Error. Text: " . $text);
+                        }
                     }
                 }
+
+                if ($response->status() === 503 || $response->status() === 429) {
+                    if ($attempt < $maxRetries) {
+                        Log::warning("Gemini API error {$response->status()}. Retrying in {$retryDelay}s (Attempt {$attempt}/{$maxRetries})");
+                        sleep($retryDelay);
+                        $retryDelay *= 2; // exponential backoff
+                        continue;
+                    }
+                }
+
+                Log::error('Gemini API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return ['best_matches' => [], 'skor_keseluruhan' => 0.0, 'alasan_keseluruhan' => "Gagal menganalisis. HTTP Status: " . $response->status(), 'raw_response' => ["alasan_keseluruhan" => "API Error: " . $response->status()]];
+            } catch (\Exception $e) {
+                if ($attempt < $maxRetries) {
+                    Log::warning("Gemini API exception: {$e->getMessage()}. Retrying in {$retryDelay}s");
+                    sleep($retryDelay);
+                    $retryDelay *= 2;
+                    continue;
+                }
+                Log::error('Gemini API exception: ' . $e->getMessage());
+                return ['best_matches' => [], 'skor_keseluruhan' => 0.0, 'alasan_keseluruhan' => 'Error: ' . $e->getMessage(), 'raw_response' => ["alasan_keseluruhan" => 'Exception: ' . $e->getMessage()]];
             }
-
-            Log::error('Gemini API error', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
-            return ['best_matches' => [], 'skor_keseluruhan' => 0.0, 'alasan_keseluruhan' => "Gagal menganalisis. HTTP Status: " . $response->status(), 'raw_response' => ["alasan_keseluruhan" => "API Error: " . $response->status()]];
-        } catch (\Exception $e) {
-            Log::error('Gemini API exception: ' . $e->getMessage());
-            return ['best_matches' => [], 'skor_keseluruhan' => 0.0, 'alasan_keseluruhan' => 'Error: ' . $e->getMessage(), 'raw_response' => ["alasan_keseluruhan" => 'Exception: ' . $e->getMessage()]];
         }
+        
+        return ['best_matches' => [], 'skor_keseluruhan' => 0.0, 'alasan_keseluruhan' => "Gagal menganalisis setelah {$maxRetries} percobaan.", 'raw_response' => ["alasan_keseluruhan" => "Failed after max retries."]];
     }
 
     protected function buildBatchPrompt(array $dataAsli, array $potonganInfoList): string

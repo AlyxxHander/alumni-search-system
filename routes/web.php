@@ -20,17 +20,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // Alumni CRUD
+    Route::post('alumni/import/csv', [AlumniController::class, 'importCsv'])->name('alumni.import.csv');
     Route::resource('alumni', AlumniController::class)->parameters([
         'alumni' => 'alumni'
     ]);
+    Route::post('alumni/bulk-destroy', [AlumniController::class, 'bulkDestroy'])->name('alumni.bulk-destroy');
     Route::post('alumni/{alumni}/unvalidate', [AlumniController::class, 'unvalidate'])->name('alumni.unvalidate');
 
     // Pelacakan
     Route::post('tracking/run', [TrackingController::class, 'runAll'])->name('tracking.run');
     Route::post('tracking/run/{alumni}', [TrackingController::class, 'runSingle'])->name('tracking.run-single');
+    Route::post('tracking/run-bulk', [TrackingController::class, 'runBulk'])->name('tracking.run-bulk');
 
     // Verifikasi Manual
     Route::get('verification', [VerificationController::class, 'index'])->name('verification.index');
+    Route::post('verification/confirm-all', [VerificationController::class, 'confirmAll'])->name('verification.confirmAll');
     Route::post('verification/{trackingResult}/confirm', [VerificationController::class, 'confirm'])->name('verification.confirm');
     Route::post('verification/{trackingResult}/reject', [VerificationController::class, 'reject'])->name('verification.reject');
     Route::post('verification/{trackingResult}/skip', [VerificationController::class, 'skip'])->name('verification.skip');

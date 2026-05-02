@@ -4,10 +4,20 @@
 @section('content')
     {{-- Actions --}}
     <div class="flex justify-between items-center mb-4">
-        <a href="{{ route('alumni.create') }}"
-            class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm">
-            ➕ Tambah Alumni
-        </a>
+        <div class="flex gap-2">
+            <a href="{{ route('alumni.create') }}"
+                class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm">
+                ➕ Tambah Alumni
+            </a>
+            <button type="button" onclick="document.getElementById('importModal').classList.remove('hidden')"
+                class="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 text-sm">
+                📁 Import CSV
+            </button>
+            <button id="btnBulkDelete" type="button" onclick="bulkDelete()"
+                class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm hidden">
+                🗑️ Hapus Terpilih (<span id="selectedCount">0</span>)
+            </button>
+        </div>
         <form action="{{ route('tracking.run') }}" method="POST">
             @csrf
             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm">
@@ -86,6 +96,9 @@
             <table class="w-full text-sm">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-4 py-3 text-left">
+                            <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                        </th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NIM</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fakultas</th>
@@ -93,6 +106,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lulus</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tempat Kerja</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Skor</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
                     </tr>
@@ -100,6 +114,9 @@
                 <tbody class="divide-y">
                     @forelse ($alumni as $a)
                         <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <input type="checkbox" name="alumni_ids[]" value="{{ $a->id }}" class="alumni-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                            </td>
                             <td class="px-4 py-3 text-gray-600 font-mono text-xs">{{ $a->nim }}</td>
                             <td class="px-4 py-3 font-medium text-gray-800">
                                 {{ $a->nama_lengkap }}
@@ -119,6 +136,15 @@
                                         {{ $a->jenis_pekerjaan == 'Wirausaha' ? 'bg-orange-100 text-orange-700' : '' }}
                                         {{ $a->jenis_pekerjaan == 'Lainnya' ? 'bg-gray-100 text-gray-700' : '' }}
                                     ">{{ $a->jenis_pekerjaan }}</span>
+                                @else
+                                    <span class="text-gray-400 text-xs">-</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3">
+                                @if($a->skor_keseluruhan > 0)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold {{ $a->skor_keseluruhan >= 0.7 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                                        {{ number_format($a->skor_keseluruhan * 100, 0) }}%
+                                    </span>
                                 @else
                                     <span class="text-gray-400 text-xs">-</span>
                                 @endif
@@ -168,7 +194,118 @@
         </div>
     </div>
 
+    {{-- Import Modal --}}
+    <div id="importModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Import Data Alumni (CSV)</h3>
+                <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')" class="text-gray-500 hover:text-gray-700">✖</button>
+            </div>
+            
+            <form action="{{ route('alumni.import.csv') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">File CSV <span class="text-red-500">*</span></label>
+                    <input type="file" name="csv_file" accept=".csv" required class="w-full text-sm border border-gray-300 rounded-md p-2">
+                    <p class="text-xs text-gray-500 mt-1">Kolom WAJIB URUT: Nama Lulusan, NIM, Tahun Masuk, Tanggal Lulus, Fakultas, Program Studi. Baris 1 dianggap sebagai Header.</p>
+                </div>
+                
+                <div class="flex gap-4 mb-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mulai dr Baris</label>
+                        <input type="number" name="start_line" value="2" min="1" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Contoh: 2">
+                        <p class="text-[10px] text-gray-500 mt-1">2 = Lewati header</p>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sampai Baris</label>
+                        <input type="number" name="end_line" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Opsional">
+                        <p class="text-[10px] text-gray-500 mt-1">Kosongkan jika semua</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md text-sm hover:bg-gray-300">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-md text-sm hover:bg-yellow-700" onclick="document.getElementById('importModal').classList.add('hidden'); Swal.fire({title: 'Mengirim...', text: 'Mohon tunggu', allowOutsideClick: false, didOpen: () => {Swal.showLoading()}});">Import Sekarang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 <script>
+// Select All Checkbox
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.alumni-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+    updateBulkDeleteButton();
+});
+
+// Individual Checkbox
+document.querySelectorAll('.alumni-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateBulkDeleteButton);
+});
+
+function updateBulkDeleteButton() {
+    const checkedCount = document.querySelectorAll('.alumni-checkbox:checked').length;
+    const btn = document.getElementById('btnBulkDelete');
+    const countLabel = document.getElementById('selectedCount');
+    
+    if (checkedCount > 0) {
+        btn.classList.remove('hidden');
+        countLabel.textContent = checkedCount;
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+function bulkDelete() {
+    const checkedIds = Array.from(document.querySelectorAll('.alumni-checkbox:checked')).map(cb => cb.value);
+    
+    if (checkedIds.length === 0) return;
+
+    Swal.fire({
+        title: 'Hapus Massal?',
+        text: `Anda akan menghapus ${checkedIds.length} data alumni terpilih. Tindakan ini tidak dapat dibatalkan!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus Semua!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Menghapus...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch('{{ route("alumni.bulk-destroy") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ ids: checkedIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Berhasil', data.message, 'success').then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Gagal', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+            });
+        }
+    });
+}
+
 function lacakUlang(alumniId, buttonEl) {
     Swal.fire({
         title: 'Memasukkan ke Antrean...',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\StatusPelacakan;
 use App\Models\Alumni;
+use App\Models\BulkTrackingLog;
 use App\Models\TrackingResult;
 
 class DashboardController extends Controller
@@ -47,6 +48,17 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('dashboard', compact('totalAlumni', 'stats', 'statsJenisPekerjaan', 'statsKelengkapan', 'pendingVerification'));
+        // Bulk tracking progress
+        $bulkStats = BulkTrackingLog::getOverallStats();
+        $bulkStats['total_alumni'] = $totalAlumni;
+        $bulkStats['processed_alumni'] = $totalAlumni - ($stats['belum_dilacak'] + $stats['sedang_dilacak']);
+        $bulkStats['percent'] = $totalAlumni > 0
+            ? round(($bulkStats['processed_alumni'] / $totalAlumni) * 100, 1)
+            : 0;
+
+        return view('dashboard', compact(
+            'totalAlumni', 'stats', 'statsJenisPekerjaan', 'statsKelengkapan',
+            'pendingVerification', 'bulkStats'
+        ));
     }
 }

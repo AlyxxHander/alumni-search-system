@@ -2,6 +2,18 @@
 @section('title', 'Verifikasi Manual')
 
 @section('content')
+
+@if($results->total() > 0)
+<div class="mb-6 flex justify-end">
+    <form action="{{ route('verification.confirmAll') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyetujui SEMUA data yang sedang menunggu verifikasi? Data ini akan dimasukkan ke database utama alumni.');">
+        @csrf
+        <button type="submit" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-md transition-all active:scale-95 flex items-center justify-center gap-2">
+            <span>✅</span> Verifikasi Semua Data Sekaligus
+        </button>
+    </form>
+</div>
+@endif
+
 @forelse($results as $result)
 <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
     <div class="flex flex-col lg:flex-row justify-between gap-6">

@@ -278,7 +278,13 @@
         </div>
         @empty
         <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-            Belum ada hasil pelacakan. Klik "Lacak Ulang" untuk memulai.
+            @if($alumni->status_pelacakan->value === 'TIDAK_DITEMUKAN')
+                Tidak ada profil yang cocok ditemukan di mesin pencari. Klik "Lacak Ulang" untuk mencoba lagi.
+            @elseif($alumni->status_pelacakan->value === 'SEDANG_DILACAK')
+                Sedang mengumpulkan data dari mesin pencari dan memproses profil. Harap tunggu...
+            @else
+                Belum ada hasil pelacakan. Klik "Lacak Ulang" untuk memulai.
+            @endif
         </div>
         @endforelse
     </div>

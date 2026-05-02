@@ -111,6 +111,8 @@ class TrackAlumniJob implements ShouldQueue
             $platformIndices[$res['sumber_enum']->value][] = $idx;
         }
 
+        $platformLinksFound = [];
+
         // Loop melalui platform yang benar-benar ada hasil pencariannya
         foreach ($platformIndices as $platformStr => $indices) {
             // Cari match dari gemini untuk platform ini
@@ -140,6 +142,17 @@ class TrackAlumniJob implements ShouldQueue
             $bestResult = $allResults[$bestIndex];
 
             $extractedData = $matchedObject['extracted_data'] ?? [];
+
+            // PASTIKAN LINK PLATFORM TETAP DIMASUKKAN
+            $platformKey = strtolower($platformStr);
+            if (in_array($platformKey, ['linkedin', 'instagram', 'facebook', 'tiktok'])) {
+                if (empty($extractedData[$platformKey]) && !empty($bestResult['url_profil'])) {
+                    $extractedData[$platformKey] = $bestResult['url_profil'];
+                }
+                if (!empty($bestResult['url_profil'])) {
+                    $platformLinksFound[$platformKey] = $bestResult['url_profil'];
+                }
+            }
 
             TrackingResult::create([
                 'alumni_id' => $this->alumni->id,
@@ -176,10 +189,8 @@ class TrackAlumniJob implements ShouldQueue
             ]);
 
             // Ekstrak data dari semua profil, valid atau tidak valid, sesuai permintaan pengguna
-            if ($matchedObject !== null) {
-                // $extractedData sudah didefinisikan di atas
-                if (!empty($extractedData)) {
-                    $fieldsToExtract = [
+            if (!empty($extractedData)) {
+                $fieldsToExtract = [
                         'email', 'no_hp', 'linkedin', 'instagram', 'facebook', 'tiktok',
                         'tempat_bekerja', 'alamat_bekerja', 'posisi', 'jenis_pekerjaan',
                         'sosmed_tempat_bekerja', 'instansi_linkedin', 'instansi_instagram',
@@ -202,6 +213,14 @@ class TrackAlumniJob implements ShouldQueue
         // 2. Simpan hasil GABUNGAN (sebagai data utama yang diverifikasi)
         if (!empty($allResults)) {
             $unified = $analysis['unified_data'] ?? [];
+            
+            // Inject platform links into unified_data if empty
+            foreach ($platformLinksFound as $platKey => $platUrl) {
+                if (empty($unified[$platKey])) {
+                    $unified[$platKey] = $platUrl;
+                }
+            }
+            
             TrackingResult::create([
                 'alumni_id' => $this->alumni->id,
                 'sumber' => \App\Enums\SumberPelacakan::GABUNGAN,

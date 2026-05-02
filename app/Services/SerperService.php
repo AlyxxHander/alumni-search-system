@@ -18,7 +18,7 @@ class SerperService
         $this->apiKey = config('services.serper.api_key', env('SERPER_API_KEY', ''));
     }
 
-    public function search(string $query, int $num = 5): array
+    public function search(string $query, int $num): array
     {
         try {
             $response = Http::withHeaders([
@@ -59,7 +59,7 @@ class SerperService
         $mergedResponse = [];
 
         foreach ($queries as $query) {
-            $response = $this->search($query, $this->getNumResults($sumber));
+            $response = $this->search($query, $this->getNumResults());
 
             if (empty($response)) continue;
 
@@ -141,7 +141,7 @@ class SerperService
             $queries[] = "\"{$namaLengkap}\" {$namaKampus} {$siteFilter}";
 
         } else {
-            // GitHub dan lainnya
+            // lainnya
             $queries[] = "\"{$namaLengkap}\" {$namaKampus} {$prodi} {$siteFilter}";
 
             if ($namaPanggilan && $namaPanggilan !== $namaLengkap) {
@@ -154,9 +154,9 @@ class SerperService
     }
 
     /**
-     * Tentukan jumlah hasil pencarian berdasarkan platform
+     * Tentukan jumlah hasil pencarian berdasarkan platform (HARDCODED value = 3)
      */
-    protected function getNumResults(SumberPelacakan $sumber): int
+    protected function getNumResults()
     {
         return 3; // Limit maksimal pencarian menjadi 3 per source sesuai permintaan terbaru
     }

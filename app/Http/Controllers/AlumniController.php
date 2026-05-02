@@ -4,10 +4,36 @@ namespace App\Http\Controllers;
 
 use App\Enums\StatusPelacakan;
 use App\Models\Alumni;
+use App\Jobs\ImportAlumniCsvJob;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AlumniController extends Controller
 {
+    public function importCsv(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:102400', // max 100MB
+            'start_line' => 'nullable|integer|min:2',
+            'end_line' => 'nullable|integer|gt:start_line',
+        ]);
+
+        $file = $request->file('csv_file');
+        
+        // Save the file to storage/app/private/imports (Laravel 11+ local disk)
+        $path = $file->storeAs('imports', 'alumni_' . time() . '_' . $file->getClientOriginalName());
+
+        // Dispatch the job with absolute file path
+        ImportAlumniCsvJob::dispatch(
+            Storage::path($path),
+            $request->input('start_line', 2), // Default skip header
+            $request->input('end_line', null)
+        );
+
+        return redirect()->route('alumni.index')
+            ->with('success', 'Data sedang diimpor di latar belakang. Silakan muat ulang halaman ini dalam beberapa saat untuk melihat hasilnya.');
+    }
+
     public function index(Request $request)
     {
         $query = Alumni::query();
@@ -148,5 +174,15 @@ class AlumniController extends Controller
         ]);
 
         return back()->with('success', 'Validasi alumni berhasil dibatalkan. Data pencarian tetap tersimpan untuk verifikasi manual.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (!empty($ids)) {
+            Alumni::whereIn('id', $ids)->delete();
+            return response()->json(['success' => true, 'message' => count($ids) . ' data alumni berhasil dihapus.']);
+        }
+        return response()->json(['success' => false, 'message' => 'Tidak ada data yang dipilih.'], 400);
     }
 }

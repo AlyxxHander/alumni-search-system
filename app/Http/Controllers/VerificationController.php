@@ -129,4 +129,48 @@ class VerificationController extends Controller
 
         return back()->with('info', 'Data temuan dilewati.');
     }
+
+    public function confirmAll()
+    {
+        $pendingResults = TrackingResult::with('alumni')
+            ->where('sumber', \App\Enums\SumberPelacakan::GABUNGAN)
+            ->pending()
+            ->get();
+
+        $count = 0;
+        foreach ($pendingResults as $trackingResult) {
+            // 1. Update status verifikasi pada record GABUNGAN ini
+            $trackingResult->update([
+                'status_verifikasi' => StatusVerifikasi::CONFIRMED,
+                'verified_by' => auth()->id(),
+                'verified_at' => now(),
+            ]);
+
+            // 2. Set semua hasil pelacakan lain milik alumni ini ke CONFIRMED
+            TrackingResult::where('alumni_id', $trackingResult->alumni_id)
+                ->where('id', '!=', $trackingResult->id)
+                ->pending()
+                ->update(['status_verifikasi' => StatusVerifikasi::CONFIRMED]);
+
+            // 3. Update data utama alumni dari hasil GABUNGAN ini
+            $fields = [
+                'email', 'no_hp', 'linkedin', 'instagram', 'facebook', 'tiktok',
+                'tempat_bekerja', 'alamat_bekerja', 'posisi', 'jenis_pekerjaan', 'sosmed_tempat_bekerja'
+            ];
+
+            $updateData = ['status_pelacakan' => StatusPelacakan::TERVERIFIKASI];
+            foreach ($fields as $field) {
+                if (!empty($trackingResult->$field)) {
+                    $updateData[$field] = $trackingResult->$field;
+                }
+            }
+
+            if ($trackingResult->alumni) {
+                $trackingResult->alumni->update($updateData);
+            }
+            $count++;
+        }
+
+        return back()->with('success', "{$count} data profil alumni telah berhasil diverifikasi secara massal.");
+    }
 }
